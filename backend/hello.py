@@ -6,7 +6,6 @@ import json
 import string
 import secrets
 
-
 class MessageTypes(str,Enum):
     dm="dm"
     broadcast="broadcast"
