@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            .container {
+            display: flex;
+            gap: 50%;
+            }
+        </style>
+    </head>
+<body>
+    <p id="status">Disconnected</p>
+
+    <input id="msg" placeholder="Type message" />
+    <select id="reciever_choice" name="Reciever">
+        
+    </select>
+    <button id="btn" onclick="send()" disabled>Send</button>
+
+    <div class="container">
+        <ul id="chat"></ul>
+        <ul id="UserOnline"></ul>
+    </div>
+
+
+    <script>
+        const clientId = Math.floor(Math.random() * 1000);
+        const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientId}`);
+
+        ws.onopen = () => {
+            document.getElementById("status").textContent =
+                `Connected as client ${clientId}`;
+            document.getElementById("btn").disabled = false;
+        };
+
+        ws.onmessage = (event) => {
+            const data=JSON.parse(event.data);
+            if (data.message_type=="user_list"){
+                const ul=document.getElementById("UserOnline");
+                const select=document.getElementById("reciever_choice");
+                if (!ul || !select) {
+                    console.error("UserOnline or reciver_choice not found yet");
+                    return;
+                }
+
+
+                select.innerHTML="";
+                ul.innerHTML="";
+
+                const allOpt=document.createElement("option")
+                allOpt.value = "all";
+                allOpt.textContent = "All";
+                select.appendChild(allOpt);
+                const users=JSON.parse(data.message)
+                users.forEach(id=>{
+                    if (id==clientId)return;
+                    const li=document.createElement("li");
+                    li.textContent=`User ${id}`;
+                    ul.appendChild(li);
+
+                    const opt = document.createElement("option");
+                    opt.value = id;
+                    opt.textContent = `User ${id}`;
+                    select.appendChild(opt);
+                });
+                return;
+            }
+            const li = document.createElement("li");
+            li.textContent = `User ${data.sender_id}: ${data.message}`;
+            document.getElementById("chat").appendChild(li);
+        };
+
+        ws.onclose = () => {
+            document.getElementById("status").textContent = "Disconnected";
+        };
+
+        function send() {
+            const input = document.getElementById("msg");
+            const select=document.getElementById("reciever_choice");
+
+
+            const mssg_text=input.value;
+            if(!mssg_text)return;
+
+            let msg;
+
+            if(select.value=="all"){
+                msg={
+                    message_type:"broadcast",
+                    sender_id:clientId,
+                    reciever_id:null,
+                    message:mssg_text
+                };
+            }
+            else{
+                msg={
+                    message_type:"dm",
+                    sender_id:clientId,
+                    reciever_id:Number(select.value),
+                    message:mssg_text
+                };
+
+            }
+
+            ws.send(JSON.stringify(msg));
+            input.value = "";
+        }
+    
+    </script>
+</body>
+</html>
+
