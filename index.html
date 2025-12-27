@@ -2,11 +2,76 @@
 <html>
     <head>
         <style>
-            .container {
-            display: flex;
-            gap: 50%;
+            body {
+                font-family: system-ui, -apple-system, sans-serif;
+                margin: 20px;
             }
-        </style>
+
+            #status {
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+
+            .container {
+                display: flex;
+                gap: 20px;
+                margin-top: 15px;
+            }
+
+            #chat, #UserOnline {
+                list-style: none;
+                padding: 10px;
+                margin: 0;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                min-height: 300px;
+                width: 320px;
+                overflow-y: auto;
+            }
+            .msg-usr {
+                background: #f1f5f9;
+                padding: 6px 10px;
+                margin-bottom: 6px;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+
+            .self_msg {
+                background-color: hsl(201, 95%, 69%);
+                color: white;
+                padding: 6px 10px;
+                margin-bottom: 6px;
+                border-radius: 6px;
+                text-align: right;
+                font-size: 14px;
+            }
+
+            .msg-system {
+                font-size: 13px;
+                color: #666;
+                font-style: italic;
+                text-align: center;
+                margin: 8px 0;
+            }
+
+            input, select, button {
+                padding: 6px;
+                margin-right: 6px;
+                margin-bottom: 6px;
+            }
+            @media (max-width: 700px) {
+                .container {
+                flex-direction: column;
+                }
+
+                #chat, #UserOnline {
+                width: 100%;
+                min-height: 200px;
+                }
+            }
+            </style>
+
+
     </head>
 <body>
     <p id="status">Disconnected</p>
@@ -24,26 +89,28 @@
 
 
     <script>
-        const clientId = Math.floor(Math.random() * 1000);
-        const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientId}`);
+        let clientId="";
+        const ws = new WebSocket(`ws://127.0.0.1:8000/ws`);
 
         ws.onopen = () => {
-            document.getElementById("status").textContent =
-                `Connected as client ${clientId}`;
+            
             document.getElementById("btn").disabled = false;
         };
 
         ws.onmessage = (event) => {
             const data=JSON.parse(event.data);
+            if(data.message_type=="dm"){
+                data.message="[WHISPER]  "+data.message;
+            }
+            if(data.message_type=="client_id"){
+                clientId=data.message;
+                document.getElementById("status").textContent =
+                `Connected as client ${clientId}`;
+                return;
+            }
             if (data.message_type=="user_list"){
                 const ul=document.getElementById("UserOnline");
                 const select=document.getElementById("reciever_choice");
-                if (!ul || !select) {
-                    console.error("UserOnline or reciver_choice not found yet");
-                    return;
-                }
-
-
                 select.innerHTML="";
                 ul.innerHTML="";
 
@@ -65,8 +132,15 @@
                 });
                 return;
             }
+
             const li = document.createElement("li");
-            li.textContent = `User ${data.sender_id}: ${data.message}`;
+            if (data.sender_id === "server") {
+                li.classList.add("msg-system");
+                li.textContent = `[SYSTEM] ${data.message}`;
+            } else {
+                li.classList.add("msg-usr");
+                li.textContent = `User ${data.sender_id}: ${data.message}`;
+            }
             document.getElementById("chat").appendChild(li);
         };
 
@@ -96,13 +170,18 @@
                 msg={
                     message_type:"dm",
                     sender_id:clientId,
-                    reciever_id:Number(select.value),
+                    reciever_id:select.value,
                     message:mssg_text
                 };
 
             }
 
             ws.send(JSON.stringify(msg));
+            chat=document.getElementById("chat");
+            const li=document.createElement("li");
+            li.classList.add("self_msg");
+            li.textContent=mssg_text;
+            chat.appendChild(li);
             input.value = "";
         }
     
