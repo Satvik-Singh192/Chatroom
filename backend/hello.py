@@ -1,43 +1,36 @@
-from fastapi import FastAPI,WebSocket,WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-from enum import Enum
+from fastapi import FastAPI,WebSocket,WebSocketDisconnect,HTTPException,Query
+from fastapi.middleware.cors import CORSMiddleware
 import json
-import string
-import secrets
+from .models import Message,MessageTypes,User,UserLoginSignUp
+from .jwt import hash_password,verify_password,create_jwt_token,decode_jwt
 
-class MessageTypes(str,Enum):
-    dm="dm"
-    broadcast="broadcast"
-    user_list="user_list"
-    client_id="client_id"
-
-class Message(BaseModel):
-    message_type:MessageTypes
-    sender_id:str
-    reciever_id:str|None=None
-    message:str
-
-def randstr(length=8):
-    alphabet=string.ascii_lowercase+string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
-
+user_database:dict[str:User]={}
 
 app=FastAPI()
+origins = [
+    "http://localhost",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "*", 
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ConnectionManager:
     def __init__(self):
         self.active_connections:dict[str,WebSocket]={}
     
-    async def connect(self,websocket:WebSocket)->str:
+    async def connect(self,user_id,websocket:WebSocket)->str:
         await websocket.accept()
-        client_id:str=randstr();
-        self.active_connections[client_id]=websocket
-        client_id_mssg=Message(message_type=MessageTypes.client_id,sender_id="server",reciever_id=client_id,message=f"{client_id}")
-        await self.send_personal_message(client_id_mssg)
+        self.active_connections[user_id]=websocket
         await self.send_user_list();
-        await self.broadcast(Message(message_type=MessageTypes.broadcast,sender_id="server",reciever_id=None,message=f"user {client_id} has joined the chat"))
-        return client_id
+        await self.broadcast(Message(message_type=MessageTypes.broadcast,sender_id="server",reciever_id=None,message=f"user {user_id} has joined the chat"))
     
     def get_websocket(self,client_id:str):
         if client_id not in self.active_connections:
@@ -74,20 +67,49 @@ class ConnectionManager:
 
 manager=ConnectionManager()
 
+@app.post("/signup")
+def signup(user_data:UserLoginSignUp):
+    if user_data.user_id in user_database:
+        raise HTTPException(status_code=409,detail="User already exists")
+    hashed_pwd=hash_password(user_data.password)
+    user=User(user_id=user_data.user_id,hashed_password=hashed_pwd)
+    user_database[user_data.user_id]=user
+    return {"status":"success"}
+
+
+@app.post("/login")
+def login(user_data:UserLoginSignUp):
+    user=user_database.get(user_data.user_id)
+    if not user:
+        raise HTTPException(status_code=404,detail="user not found")
+    
+    if verify_password(pass_to_check=user_data.password,hashed_password=user.hashed_password)==False:
+        raise HTTPException(status_code=404,detail="invalid credentials")
+    token=create_jwt_token(user_data)
+    return {"access_token":token}
+
 @app.websocket("/ws")
-async def websocket_endpoint(websocket:WebSocket):
-    client_id=await manager.connect(websocket)
+async def websocket_endpoint(websocket:WebSocket,token:str=Query(None)):
+    if token is None:
+        await websocket.close(code=1008)
+        return
+    user_id_frmjwt=decode_jwt(token)
+    if user_id_frmjwt is None:
+        await websocket.close(code=1008)
+        return
+    
+    await manager.connect(user_id_frmjwt,websocket)
     try:
         while True:
             data=await websocket.receive_json()
             msg=Message(**data)
-            msg.sender_id = client_id
+            msg.sender_id = user_id_frmjwt
 
             if msg.message_type==MessageTypes.dm:
                 await manager.send_personal_message(msg)
             elif msg.message_type==MessageTypes.broadcast:
                 await manager.broadcast(msg)
     except WebSocketDisconnect:
-            await manager.disconnect(client_id)
+            await manager.disconnect(user_id_frmjwt)
 
 

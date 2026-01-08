@@ -74,80 +74,125 @@
 
     </head>
 <body>
-    <p id="status">Disconnected</p>
-
-    <input id="msg" placeholder="Type message" />
-    <select id="reciever_choice" name="Reciever">
-        
-    </select>
-    <button id="btn" onclick="send()" disabled>Send</button>
-
-    <div class="container">
-        <ul id="chat"></ul>
-        <ul id="UserOnline"></ul>
+    <div id="auth_section">
+        <h2>welcome to the best chatroom</h2>
+        <input id="auth_user" placeholder="Username">
+        <input id="auth_pass" placeholder="Password">
+        <button onclick="handleauth('signup')">Sign Up</button>
+        <button onclick="handleauth('login')">Login Up</button>
+        <p id="auth_error" style="color: red;"></p>
+    </div>
+    <div id="chat_section" style="display: none;">
+        <p id="status">Disconnected</p>
+        <input id="msg" placeholder="Type message" />
+        <select id="reciever_choice" name="Reciever">    
+        </select>
+        <button id="btn" onclick="send()" disabled>Send</button>
+        <div class="container">
+            <ul id="chat"></ul>
+            <ul id="UserOnline"></ul>
+        </div>
     </div>
 
 
     <script>
+        let ws;
         let clientId="";
-        const ws = new WebSocket("wss://chatroom-as5j.onrender.com/ws");
+        //devlopment only
+        //let root_url_ws="ws://127.0.0.1:8000/ws";
+        //let root_url_http="http://127.0.0.1:8000/";
 
-        ws.onopen = () => {
-            
-            document.getElementById("btn").disabled = false;
-        };
+        //deployement url
+        let root_url_http="https://chatroom-as5j.onrender.com/";
+        let root_url_ws = "wss://chatroom-as5j.onrender.com/ws";
 
-        ws.onmessage = (event) => {
-            const data=JSON.parse(event.data);
-            if(data.message_type=="dm"){
-                data.message="[WHISPER]  "+data.message;
-            }
-            if(data.message_type=="client_id"){
-                clientId=data.message;
-                document.getElementById("status").textContent =
-                `Connected as client ${clientId}`;
-                return;
-            }
-            if (data.message_type=="user_list"){
-                const ul=document.getElementById("UserOnline");
-                const select=document.getElementById("reciever_choice");
-                select.innerHTML="";
-                ul.innerHTML="";
-
-                const allOpt=document.createElement("option")
-                allOpt.value = "all";
-                allOpt.textContent = "All";
-                select.appendChild(allOpt);
-                const users=JSON.parse(data.message)
-                users.forEach(id=>{
-                    if (id==clientId)return;
-                    const li=document.createElement("li");
-                    li.textContent=`User ${id}`;
-                    ul.appendChild(li);
-
-                    const opt = document.createElement("option");
-                    opt.value = id;
-                    opt.textContent = `User ${id}`;
-                    select.appendChild(opt);
+        async function handleauth(type){
+            const user_auth=document.getElementById("auth_user").value;
+            const password_auth=document.getElementById("auth_pass").value;
+            errorl=document.getElementById("auth_error");
+            let url=root_url_http+type;
+            try{
+                const response=await fetch(url,{
+                    method:'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user_auth, password: password_auth })
                 });
-                return;
+                const data=await response.json();
+                if(type=="signup"){
+                    throw new Error(data.status||data.detail);
+                }
+
+                if(!response.ok)throw new Error(data.detail||"something went wrong, index 117");
+                if(type=="login"){
+                    clientId=user_auth;
+                    const token=data.access_token;
+                    start_chat(token);
+                }
+            }
+            catch(err){
+                errorl.textContent=err.message;
             }
 
-            const li = document.createElement("li");
-            if (data.sender_id === "server") {
-                li.classList.add("msg-system");
-                li.textContent = `[SYSTEM] ${data.message}`;
-            } else {
-                li.classList.add("msg-usr");
-                li.textContent = `User ${data.sender_id}: ${data.message}`;
-            }
-            document.getElementById("chat").appendChild(li);
-        };
+        }
+        function start_chat(token){
+            document.getElementById("auth_section").style.display="none";
+            document.getElementById("chat_section").style.display="block";
+            let websocket_url=root_url_ws+`?token=${token}`;
+            ws=new WebSocket(websocket_url);
+            ws.onopen = () => {
+                document.getElementById("btn").disabled = false;
+                document.getElementById("status").textContent=`Connected as  ${clientId}`;
+            };
+            ws.onmessage = (event) => {
+                const data=JSON.parse(event.data);
+                if(data.message_type=="dm"){
+                    data.message="[WHISPER]  "+data.message;
+                }
+                if(data.message_type=="client_id"){
+                    clientId=data.message;
+                    document.getElementById("status").textContent =
+                    `Connected as client ${clientId}`;
+                    return;
+                }
+                if (data.message_type=="user_list"){
+                    const ul=document.getElementById("UserOnline");
+                    const select=document.getElementById("reciever_choice");
+                    select.innerHTML="";
+                    ul.innerHTML="";
 
-        ws.onclose = () => {
-            document.getElementById("status").textContent = "Disconnected";
-        };
+                    const allOpt=document.createElement("option")
+                    allOpt.value = "all";
+                    allOpt.textContent = "All";
+                    select.appendChild(allOpt);
+                    const users=JSON.parse(data.message)
+                    users.forEach(id=>{
+                        if (id==clientId)return;
+                        const li=document.createElement("li");
+                        li.textContent=`User ${id}`;
+                        ul.appendChild(li);
 
+                        const opt = document.createElement("option");
+                        opt.value = id;
+                        opt.textContent = `User ${id}`;
+                        select.appendChild(opt);
+                    });
+                    return;
+                }
+
+                const li = document.createElement("li");
+                if (data.sender_id === "server") {
+                    li.classList.add("msg-system");
+                    li.textContent = `[SYSTEM] ${data.message}`;
+                } else {
+                    li.classList.add("msg-usr");
+                    li.textContent = `User ${data.sender_id}: ${data.message}`;
+                }
+                document.getElementById("chat").appendChild(li);
+            };
+                ws.onclose = () => {
+                document.getElementById("status").textContent = "Disconnected";
+            };
+        }
         function send() {
             const input = document.getElementById("msg");
             const select=document.getElementById("reciever_choice");

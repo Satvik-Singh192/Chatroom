@@ -1,3 +1,23 @@
+## v1.1.0
+- client ids are no more randomized
+- login and signup via jwt token authentication is implemented now.
+- code refactored , seprated the jwt logic in seprate file. and moved all the pydantic models to model.py to make the codebase cleaner
+- added .env to avoid leaking my secret key used for jwt.
+- also added .env.example so anyone can make their .env 
+
+### demo pics
+
+#### login/signup
+![how did this fail...](images/v1_1_0_authentication.png)
+
+#### chatroom
+![how did this fail...](images/v1_0_0_chatroom.png)
+
+#### logs and jwt token assigned
+![how did this fail...](images/v1_1_0_jwt.png)
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
 ## v1
 - client_id is now a string, not int
 - before the client was generating the client id and telling it to server which is a security issue, so now server makes the client_id and never trust the sender_id sent by clinet .... its purely for showing purpose. the server over writes it
