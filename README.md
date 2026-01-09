@@ -1,3 +1,7 @@
+## v1.1.2
+- there was a bug where the user_id was passed as the token.
+- the user_id wasnt handled properly when reloading
+
 ## v1.1.1 
 - there was a issue , where when the user reloads the webpage. it throws them back to auth page and will assign them a new jwt token on login again
 - the old jwt token went to waste even if it was still valid and not expired

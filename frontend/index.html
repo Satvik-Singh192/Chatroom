@@ -111,7 +111,7 @@
             const savedUsr=localStorage.getItem("chat_user");
             if(savedToken&&savedUsr){
                 clientId=savedUsr;
-                start_chat(clientId);
+                start_chat(savedToken);
             }
         }
 
@@ -202,17 +202,23 @@
             };
                 ws.onclose = (event) => {
                     console.log(event.code,event.reason)
-                    if(event.reason==="TOKEN EXPIRED"){
+                        document.getElementById("btn").disabled=true;
+                    
                         localStorage.removeItem("chat_token");
                         localStorage.removeItem("chat_user");
                         document.getElementById("chat_section").style.display="none";
                         document.getElementById("auth_section").style.display="block";
+                        document.getElementById("status").textContent="Disconnected";
+                        ws=null;
 
-                    }
+                    
                 document.getElementById("status").textContent = "Disconnected";
             };
+            ws.onerror=(err)=>{
+                console.error("WEBSOCKET ERROR :",err);
+            };
         }
-        function send() {
+        function send() {           
             const input = document.getElementById("msg");
             const select=document.getElementById("reciever_choice");
 
