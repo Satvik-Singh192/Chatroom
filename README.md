@@ -1,3 +1,10 @@
+## v1.1.1 
+- there was a issue , where when the user reloads the webpage. it throws them back to auth page and will assign them a new jwt token on login again
+- the old jwt token went to waste even if it was still valid and not expired
+- i stored the jwt and userID to localStorage when the user logged in and if the page reloads we first check the localstorage if it contains a jwt token. if it is still valid we simply let the user enter enter the chatroom, otherwise back to the auth page they go
+- also handeled deleting the jwt token from localStorage after the connection has beem cut
+
+
 ## v1.1.0
 - client ids are no more randomized
 - login and signup via jwt token authentication is implemented now.

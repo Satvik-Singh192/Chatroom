@@ -90,12 +90,13 @@ def login(user_data:UserLoginSignUp):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket:WebSocket,token:str=Query(None)):
+    #await websocket.accept()
     if token is None:
         await websocket.close(code=1008)
         return
     user_id_frmjwt=decode_jwt(token)
     if user_id_frmjwt is None:
-        await websocket.close(code=1008)
+        await websocket.close(code=1008,reason="TOKEN EXPIRED")
         return
     
     await manager.connect(user_id_frmjwt,websocket)

@@ -106,6 +106,15 @@
         let root_url_http="https://chatroom-as5j.onrender.com/";
         let root_url_ws = "wss://chatroom-as5j.onrender.com/ws";
 
+        window.onload=()=>{
+            const savedToken=localStorage.getItem("chat_token");
+            const savedUsr=localStorage.getItem("chat_user");
+            if(savedToken&&savedUsr){
+                clientId=savedUsr;
+                start_chat(clientId);
+            }
+        }
+
         async function handleauth(type){
             const user_auth=document.getElementById("auth_user").value;
             const password_auth=document.getElementById("auth_pass").value;
@@ -126,6 +135,8 @@
                 if(type=="login"){
                     clientId=user_auth;
                     const token=data.access_token;
+                    localStorage.setItem("chat_token",token);
+                    localStorage.setItem("chat_user",clientId);
                     start_chat(token);
                 }
             }
@@ -189,7 +200,15 @@
                 }
                 document.getElementById("chat").appendChild(li);
             };
-                ws.onclose = () => {
+                ws.onclose = (event) => {
+                    console.log(event.code,event.reason)
+                    if(event.reason==="TOKEN EXPIRED"){
+                        localStorage.removeItem("chat_token");
+                        localStorage.removeItem("chat_user");
+                        document.getElementById("chat_section").style.display="none";
+                        document.getElementById("auth_section").style.display="block";
+
+                    }
                 document.getElementById("status").textContent = "Disconnected";
             };
         }
