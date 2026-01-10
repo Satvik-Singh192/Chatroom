@@ -1,3 +1,14 @@
+## v2.0.0
+- moved from in memory storage to database backed system (postgres op)
+- message are persisted instead of just living on memory. when a user connects last 10 messages are fetched from the database
+- refactored some of frontend code to reduce redudancy
+- also fixed a bug where when a user breaks the connection from his side(reloading) the backend tries to disconnect him twice raising an error
+- also moved a lot of steps like sending user list and loading chat history outside ConnectionManger.connect so the code is cleaner and a little easier to debug (i hope lol)
+- added relevant model (both pydantic and sqlalchemy). the conversion between them took quite a bit of time and it was confusing man. i need to come up with a better approach
+
+### demo 
+ just visit : [deployed](https://chatroom-eight-xi.vercel.app/)
+
 ## v1.1.2
 - there was a bug where the user_id was passed as the token.
 - the user_id wasnt handled properly when reloading

@@ -99,12 +99,12 @@
         let ws;
         let clientId="";
         //devlopment only
-        let root_url_ws="ws://127.0.0.1:8000/ws";
-        let root_url_http="http://127.0.0.1:8000/";
+        // let root_url_ws="ws://127.0.0.1:8000/ws";
+        // let root_url_http="http://127.0.0.1:8000/";
 
         //deployement url
-        //let root_url_http="https://chatroom-as5j.onrender.com/";
-        //let root_url_ws = "wss://chatroom-as5j.onrender.com/ws";
+        let root_url_http="https://chatroom-as5j.onrender.com/";
+        let root_url_ws = "wss://chatroom-as5j.onrender.com/ws";
 
         window.onload=()=>{
             const savedToken=localStorage.getItem("chat_token");
@@ -158,14 +158,14 @@
                 const data=JSON.parse(event.data);
                 if(data.message_type=="dm"){
                     data.message="[WHISPER]  "+data.message;
+                    render_other_mssg(data)
                 }
-                if(data.message_type=="client_id"){
+                else if(data.message_type=="client_id"){
                     clientId=data.message;
                     document.getElementById("status").textContent =
                     `Connected as client ${clientId}`;
-                    return;
                 }
-                if (data.message_type=="user_list"){
+                else if (data.message_type=="user_list"){
                     const ul=document.getElementById("UserOnline");
                     const select=document.getElementById("reciever_choice");
                     select.innerHTML="";
@@ -189,30 +189,36 @@
                     });
                     return;
                 }
-
-                const li = document.createElement("li");
-                if (data.sender_id === "server") {
-                    li.classList.add("msg-system");
-                    li.textContent = `[SYSTEM] ${data.message}`;
-                } else {
-                    li.classList.add("msg-usr");
-                    li.textContent = `User ${data.sender_id}: ${data.message}`;
+                else if(data.message_type==="broadcast"){
+                    render_other_mssg(data);
                 }
-                document.getElementById("chat").appendChild(li);
+                else if(data.message_type==="history"){
+                    const past_messages=JSON.parse(data.message);
+                    past_messages.forEach(msg=>{
+                        const li=document.createElement("li");
+                        if(msg.sender_id===clientId){
+                            render_self_mssg(msg.message);
+                        }
+                        else{
+                            render_other_mssg(msg);
+                        }
+                    }
+                    );
+                }
+                else{
+                    console.log(`Unknown message type recieve: ${data.message_type}`)
+                }
             };
                 ws.onclose = (event) => {
                     console.log(event.code,event.reason)
-                        document.getElementById("btn").disabled=true;
+                    document.getElementById("btn").disabled=true;
                     
-                        localStorage.removeItem("chat_token");
-                        localStorage.removeItem("chat_user");
-                        document.getElementById("chat_section").style.display="none";
-                        document.getElementById("auth_section").style.display="block";
-                        document.getElementById("status").textContent="Disconnected";
-                        ws=null;
-
-                    
-                document.getElementById("status").textContent = "Disconnected";
+                    localStorage.removeItem("chat_token");
+                    localStorage.removeItem("chat_user");
+                    document.getElementById("chat_section").style.display="none";
+                    document.getElementById("auth_section").style.display="block";
+                    document.getElementById("status").textContent="Disconnected";
+                    ws=null;
             };
             ws.onerror=(err)=>{
                 console.error("WEBSOCKET ERROR :",err);
@@ -245,14 +251,28 @@
                 };
 
             }
-
             ws.send(JSON.stringify(msg));
+            render_self_mssg(mssg_text);
+            input.value = "";
+        }
+        function render_self_mssg(mssg_text){
             chat=document.getElementById("chat");
             const li=document.createElement("li");
             li.classList.add("self_msg");
             li.textContent=mssg_text;
             chat.appendChild(li);
-            input.value = "";
+        }
+        function render_other_mssg(data){
+            const li = document.createElement("li");
+            if (data.sender_id === "server") {
+                li.classList.add("msg-system");
+                li.textContent = `[SYSTEM] ${data.message}`;
+            } 
+            else {
+                li.classList.add("msg-usr");
+                li.textContent = `User ${data.sender_id}: ${data.message}`;
+            }
+            document.getElementById("chat").appendChild(li);
         }
     
     </script>

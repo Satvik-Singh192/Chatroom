@@ -1,5 +1,6 @@
-from pydantic import BaseModel,Field,validator
+from pydantic import BaseModel,Field,validator,ConfigDict
 from enum import Enum
+from typing import List
 
 class User(BaseModel):
     user_id:str=Field(...,min_length=4,max_length=28)
@@ -21,9 +22,17 @@ class MessageTypes(str,Enum):
     broadcast="broadcast"
     user_list="user_list"
     client_id="client_id"
+    history="history"
 
 class Message(BaseModel):
     message_type:MessageTypes
     sender_id:str
     reciever_id:str|None=None
     message:str
+
+class Message_withID(Message):
+    id:int
+    model_config = ConfigDict(from_attributes=True)
+
+class ChatHistory(BaseModel):
+    past_history:List[Message_withID]

@@ -1,11 +1,13 @@
 from fastapi import FastAPI,WebSocket,WebSocketDisconnect,HTTPException,Query,Depends
 from fastapi.middleware.cors import CORSMiddleware
 import json
-from .models import Message,MessageTypes,UserLoginSignUp
+from .models import Message,MessageTypes,UserLoginSignUp,Message_withID
 from .jwt import hash_password,verify_password,create_jwt_token,decode_jwt
-from .database import engine,get_db
+from .database import engine,get_db,session
 from backend import database_models
 from sqlalchemy.orm import Session 
+from sqlalchemy import desc
+from sqlalchemy.exc import SQLAlchemyError
 
 database_models.Base.metadata.create_all(bind=engine)
 
@@ -35,19 +37,18 @@ class ConnectionManager:
         self.active_connections[user_id]=websocket
         await self.send_user_list();
         await self.broadcast(Message(message_type=MessageTypes.broadcast,sender_id="server",reciever_id=None,message=f"user {user_id} has joined the chat"))
-    
+
     def get_websocket(self,client_id:str):
         if client_id not in self.active_connections:
             raise ValueError(f"client with id {client_id} does not exist")
         return self.active_connections[client_id]
 
     async def disconnect(self,client_id:str):
-        if client_id not in self.active_connections:
-            raise ValueError(f"client with {client_id} already does not exist")
-        del self.active_connections[client_id]
-        await self.send_user_list();
-        await manager.broadcast(Message(message_type="broadcast",sender_id="server",reciever_id=None,message=f"user #{client_id} has left the chat"))
-    
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
+            await self.send_user_list();
+            await manager.broadcast(Message(message_type="broadcast",sender_id="server",reciever_id=None,message=f"user #{client_id} has left the chat"))
+        
     async def send_personal_message(self, msg: Message):
         receiver_ws = self.active_connections.get(msg.reciever_id)
         if receiver_ws:
@@ -69,7 +70,37 @@ class ConnectionManager:
         )
         await self.broadcast(msg)
 
+
 manager=ConnectionManager()
+
+def store_message(msg:Message):
+    db=session()
+    msg_sql=database_models.Messages(**msg.model_dump())
+    try:
+        db.add(msg_sql)
+        db.commit()
+        db.refresh(msg_sql)
+    except SQLAlchemyError as e:
+        db.rollback()
+        print(f"Database error storing message: {e}")
+        return False
+        
+
+async def load_message(user_id:str):
+    db=session()
+    messages_orm=db.query(database_models.Messages).order_by(desc(database_models.Messages.id)).limit(10).all()
+    messages_orm.reverse()
+    if messages_orm:
+        pydantic_messages = [Message_withID.from_orm(msg) for msg in messages_orm]
+        history_dicts=[msg.model_dump() for msg in pydantic_messages]
+        history_json=json.dumps(history_dicts)
+        out_msg = Message(
+            message_type=MessageTypes.history,
+            sender_id="server",
+            reciever_id=user_id,
+            message=history_json
+        )
+        await manager.send_personal_message(out_msg)
 
 @app.post("/signup")
 def signup(user_data:UserLoginSignUp,db:Session=Depends(get_db)):
@@ -95,7 +126,6 @@ def login(user_data:UserLoginSignUp,db:Session=Depends(get_db)):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket:WebSocket,token:str=Query(None)):
-    #await websocket.accept()
     if token is None:
         await websocket.close(code=1008)
         return
@@ -105,6 +135,8 @@ async def websocket_endpoint(websocket:WebSocket,token:str=Query(None)):
         return
     
     await manager.connect(user_id_frmjwt,websocket)
+    await manager.send_user_list();
+    await load_message(user_id=user_id_frmjwt)
     try:
         while True:
             data=await websocket.receive_json()
@@ -113,8 +145,12 @@ async def websocket_endpoint(websocket:WebSocket,token:str=Query(None)):
 
             if msg.message_type==MessageTypes.dm:
                 await manager.send_personal_message(msg)
+                store_message(msg)
+
             elif msg.message_type==MessageTypes.broadcast:
                 await manager.broadcast(msg)
+                store_message(msg)
+
     except WebSocketDisconnect:
             await manager.disconnect(user_id_frmjwt)
 
