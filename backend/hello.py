@@ -1,10 +1,13 @@
-from fastapi import FastAPI,WebSocket,WebSocketDisconnect,HTTPException,Query
+from fastapi import FastAPI,WebSocket,WebSocketDisconnect,HTTPException,Query,Depends
 from fastapi.middleware.cors import CORSMiddleware
 import json
-from .models import Message,MessageTypes,User,UserLoginSignUp
+from .models import Message,MessageTypes,UserLoginSignUp
 from .jwt import hash_password,verify_password,create_jwt_token,decode_jwt
+from .database import engine,get_db
+from backend import database_models
+from sqlalchemy.orm import Session 
 
-user_database:dict[str:User]={}
+database_models.Base.metadata.create_all(bind=engine)
 
 app=FastAPI()
 origins = [
@@ -21,6 +24,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 class ConnectionManager:
     def __init__(self):
@@ -68,21 +72,22 @@ class ConnectionManager:
 manager=ConnectionManager()
 
 @app.post("/signup")
-def signup(user_data:UserLoginSignUp):
-    if user_data.user_id in user_database:
+def signup(user_data:UserLoginSignUp,db:Session=Depends(get_db)):
+    user=db.query(database_models.Users).filter(database_models.Users.user_id==user_data.user_id).first()
+    if user!=None:
         raise HTTPException(status_code=409,detail="User already exists")
     hashed_pwd=hash_password(user_data.password)
-    user=User(user_id=user_data.user_id,hashed_password=hashed_pwd)
-    user_database[user_data.user_id]=user
+    user_insert=database_models.Users(user_id=user_data.user_id,hashed_password=hashed_pwd)
+    db.add(user_insert)
+    db.commit()
     return {"status":"success"}
 
 
 @app.post("/login")
-def login(user_data:UserLoginSignUp):
-    user=user_database.get(user_data.user_id)
+def login(user_data:UserLoginSignUp,db:Session=Depends(get_db)):
+    user=db.query(database_models.Users).filter(database_models.Users.user_id==user_data.user_id).first()
     if not user:
         raise HTTPException(status_code=404,detail="user not found")
-    
     if verify_password(pass_to_check=user_data.password,hashed_password=user.hashed_password)==False:
         raise HTTPException(status_code=404,detail="invalid credentials")
     token=create_jwt_token(user_data)
