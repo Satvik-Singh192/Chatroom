@@ -2,7 +2,7 @@
   color: #64b5f6;
   font-size: 0.95rem;
   margin: 0;
-  padding: 15px 15px 10px 15px;
+  padding: 12px 15px 8px 15px;
   border-bottom: 1px solid #333;
   font-weight: 600;
 }
@@ -10,19 +10,22 @@
 .UserList {
   list-style: none;
   margin: 0;
-  padding: 10px 0;
+  padding: 8px 0;
   flex: 1;
   overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .UserListItem {
-  padding: 10px 15px;
+  padding: 8px 15px;
   color: #ddd;
   font-size: 0.9rem;
   display: flex;
   align-items: center;
   cursor: pointer;
   transition: background-color 0.2s;
+  flex: 0 0 auto;
 }
 
 .UserListItem::before {
@@ -39,7 +42,63 @@
 .UserList p {
   color: #888;
   font-size: 0.85rem;
-  padding: 15px;
+  padding: 12px 15px;
   text-align: center;
   margin: 0;
+  width: 100%;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .OnlineUserListHeading {
+    font-size: 0.85rem;
+    padding: 10px 12px 6px 12px;
+  }
+
+  .UserList {
+    padding: 6px 0;
+    gap: 4px;
+  }
+
+  .UserListItem {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    flex: 0 0 auto;
+  }
+
+  .UserListItem::before {
+    margin-right: 6px;
+  }
+
+  .UserList p {
+    font-size: 0.75rem;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .OnlineUserListHeading {
+    font-size: 0.8rem;
+    padding: 8px 10px;
+  }
+
+  .UserList {
+    padding: 4px 0;
+    gap: 2px;
+  }
+
+  .UserListItem {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  .UserListItem::before {
+    margin-right: 4px;
+    font-size: 0.6rem;
+  }
+
+  .UserList p {
+    font-size: 0.7rem;
+    padding: 8px 10px;
+  }
 }

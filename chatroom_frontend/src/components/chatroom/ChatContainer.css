@@ -10,7 +10,7 @@
   flex: 1;
   list-style: none;
   margin: 0;
-  padding: 15px;
+  padding: 12px;
   overflow-y: auto;
   background-color: #2d2d2d;
 }
@@ -20,6 +20,7 @@
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 0.9rem;
+  word-wrap: break-word;
 }
 
 .msg-self {
@@ -44,9 +45,10 @@
 .ChatInputRow {
   display: flex;
   gap: 8px;
-  padding: 12px 15px;
+  padding: 10px 12px;
   border-top: 1px solid #444;
   background: #2d2d2d;
+  flex-wrap: wrap;
 }
 
 .ChatInput {
@@ -57,6 +59,8 @@
   border: 1px solid #555;
   border-radius: 4px;
   font-family: inherit;
+  font-size: 14px;
+  min-width: 150px;
 }
 
 .ChatInput::placeholder {
@@ -71,6 +75,8 @@
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
+  font-size: 14px;
+  min-width: 100px;
 }
 
 .ReceiverSelect option {
@@ -79,15 +85,89 @@
 }
 
 .SendButton {
-  padding: 8px 16px;
+  padding: 8px 14px;
   background-color: #666;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .SendButton:hover {
   background-color: #777;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .ChatMessages {
+    padding: 10px;
+  }
+
+  .ChatMessages li {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
+  .ChatInputRow {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .ChatInput {
+    padding: 6px 10px;
+    font-size: 14px;
+    min-width: 120px;
+  }
+
+  .ReceiverSelect {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 80px;
+  }
+
+  .SendButton {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ChatMessages {
+    padding: 8px;
+  }
+
+  .ChatMessages li {
+    font-size: 0.8rem;
+    padding: 5px 8px;
+    margin-bottom: 6px;
+  }
+
+  .ChatInputRow {
+    gap: 4px;
+    padding: 6px 8px;
+    flex-direction: column;
+  }
+
+  .ChatInput {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    min-width: auto;
+  }
+
+  .ReceiverSelect {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    min-width: auto;
+  }
+
+  .SendButton {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.9rem;
+  }
 }
