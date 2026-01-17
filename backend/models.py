@@ -29,6 +29,7 @@ class Message(BaseModel):
     sender_id:str
     reciever_id:str|None=None
     message:str
+    
 
 class Message_withID(Message):
     id:int

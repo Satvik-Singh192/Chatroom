@@ -90,7 +90,7 @@ export function ChatroomPage({ token, currentUser, root_url_ws, onLogout }) {
                 payload = {
                 message_type: "dm",
                 sender_id: currentUser,
-                reciever_id: receiver,
+                reciever_id: reciever,
                 message: text
             };
         }
