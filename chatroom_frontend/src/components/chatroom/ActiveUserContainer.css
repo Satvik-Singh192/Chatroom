@@ -1,0 +1,45 @@
+.OnlineUserListHeading {
+  color: #64b5f6;
+  font-size: 0.95rem;
+  margin: 0;
+  padding: 15px 15px 10px 15px;
+  border-bottom: 1px solid #333;
+  font-weight: 600;
+}
+
+.UserList {
+  list-style: none;
+  margin: 0;
+  padding: 10px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.UserListItem {
+  padding: 10px 15px;
+  color: #ddd;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.UserListItem::before {
+  content: "●";
+  color: #4caf50;
+  margin-right: 8px;
+  font-size: 0.7rem;
+}
+
+.UserListItem:hover {
+  background-color: #333;
+}
+
+.UserList p {
+  color: #888;
+  font-size: 0.85rem;
+  padding: 15px;
+  text-align: center;
+  margin: 0;
+}

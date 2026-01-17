@@ -1,0 +1,93 @@
+.ChatContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: none;
+  background-color: #2d2d2d;
+}
+
+.ChatMessages {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 15px;
+  overflow-y: auto;
+  background-color: #2d2d2d;
+}
+
+.ChatMessages li {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.msg-self {
+  background-color: #4a7ba7;
+  color: white;
+  text-align: right;
+}
+
+.msg-user {
+  background-color: #444;
+  color: #ddd;
+}
+
+.msg-system {
+  background-color: #333;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.ChatInputRow {
+  display: flex;
+  gap: 8px;
+  padding: 12px 15px;
+  border-top: 1px solid #444;
+  background: #2d2d2d;
+}
+
+.ChatInput {
+  flex: 1;
+  padding: 8px 12px;
+  background-color: #444;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.ChatInput::placeholder {
+  color: #888;
+}
+
+.ReceiverSelect {
+  padding: 8px 12px;
+  background-color: #444;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ReceiverSelect option {
+  background-color: #444;
+  color: #ddd;
+}
+
+.SendButton {
+  padding: 8px 16px;
+  background-color: #666;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.SendButton:hover {
+  background-color: #777;
+}

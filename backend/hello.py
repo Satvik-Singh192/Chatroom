@@ -10,6 +10,7 @@ from sqlalchemy import desc
 from sqlalchemy.exc import SQLAlchemyError
 
 database_models.Base.metadata.create_all(bind=engine)
+LENGTH_OF_CHAT_HISTORY_TO_LOAD_ON_LOGIN=20
 
 app=FastAPI()
 origins = [
@@ -88,7 +89,7 @@ def store_message(msg:Message):
 
 async def load_message(user_id:str):
     db=session()
-    messages_orm=db.query(database_models.Messages).order_by(desc(database_models.Messages.id)).limit(10).all()
+    messages_orm=db.query(database_models.Messages).order_by(desc(database_models.Messages.id)).limit(LENGTH_OF_CHAT_HISTORY_TO_LOAD_ON_LOGIN).all()
     messages_orm.reverse()
     if messages_orm:
         pydantic_messages = [Message_withID.from_orm(msg) for msg in messages_orm]

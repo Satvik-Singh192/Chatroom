@@ -1,8 +1,3 @@
-myenv/
-__pycache__/
-rs_based.py
-.env
-
 # Logs
 logs
 *.log
@@ -27,6 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-node_modules/
-chatroom_frontend/node_modules

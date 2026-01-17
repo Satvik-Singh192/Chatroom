@@ -70,8 +70,6 @@
                 }
             }
             </style>
-
-
     </head>
 <body>
     <div id="auth_section">
@@ -94,17 +92,16 @@
         </div>
     </div>
 
-
     <script>
         let ws;
         let clientId="";
         //devlopment only
-        // let root_url_ws="ws://127.0.0.1:8000/ws";
-        // let root_url_http="http://127.0.0.1:8000/";
+        let root_url_ws="ws://127.0.0.1:8000/ws";
+        let root_url_http="http://127.0.0.1:8000/";
 
         //deployement url
-        let root_url_http="https://chatroom-as5j.onrender.com/";
-        let root_url_ws = "wss://chatroom-as5j.onrender.com/ws";
+        //let root_url_http="https://chatroom-as5j.onrender.com/";
+        //let root_url_ws = "wss://chatroom-as5j.onrender.com/ws";
 
         window.onload=()=>{
             const savedToken=localStorage.getItem("chat_token");
