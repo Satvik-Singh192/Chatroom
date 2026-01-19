@@ -1,4 +1,4 @@
-from fastapi import FastAPI,WebSocket,WebSocketDisconnect,HTTPException,Query,Depends
+from fastapi import FastAPI,WebSocket,WebSocketDisconnect,HTTPException,Depends,Response,Request
 from fastapi.middleware.cors import CORSMiddleware
 import json
 from .models import Message,MessageTypes,UserLoginSignUp,Message_withID
@@ -15,9 +15,13 @@ LENGTH_OF_CHAT_HISTORY_TO_LOAD_ON_LOGIN=20
 app=FastAPI()
 origins = [
     "http://localhost",
-    "http://localhost:8000",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
     "http://127.0.0.1:8000",
-    "*", 
+    "http://localhost:8000",
 ]
 
 app.add_middleware(
@@ -114,6 +118,31 @@ def signup(user_data:UserLoginSignUp,db:Session=Depends(get_db)):
     db.commit()
     return {"status":"success"}
 
+@app.post("/logout")
+def logout():
+    respone=Response(
+        content=json.dumps({"status":"success"}),
+        media_type="application/json"
+    )
+    respone.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,
+        samesite="none"
+    )
+    return respone
+
+
+@app.get("/verify")
+def verify(request:Request):
+    token = request.cookies.get("access_token")
+    if token is None:
+        raise HTTPException(status_code=401, detail="No token found")
+    user_id = decode_jwt(token)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Token expired or invalid")
+    return {"status": "authenticated", "user_id": user_id}
+
 
 @app.post("/login")
 def login(user_data:UserLoginSignUp,db:Session=Depends(get_db)):
@@ -123,10 +152,26 @@ def login(user_data:UserLoginSignUp,db:Session=Depends(get_db)):
     if verify_password(pass_to_check=user_data.password,hashed_password=user.hashed_password)==False:
         raise HTTPException(status_code=404,detail="invalid credentials")
     token=create_jwt_token(user_data)
-    return {"access_token":token}
+    response=Response(
+        content=json.dumps({"status":"success"}),
+        media_type="application/json"
+    )
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=900,
+        path="/"
+
+    )
+    return response
+
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket:WebSocket,token:str=Query(None)):
+async def websocket_endpoint(websocket:WebSocket):
+    token=websocket.cookies.get("access_token")
     if token is None:
         await websocket.close(code=1008)
         return
@@ -136,6 +181,8 @@ async def websocket_endpoint(websocket:WebSocket,token:str=Query(None)):
         return
     
     await manager.connect(user_id_frmjwt,websocket)
+    msg=Message(message_type="client_id",sender_id="server",reciever_id=user_id_frmjwt,message=user_id_frmjwt)
+    await manager.send_personal_message(msg)
     await manager.send_user_list();
     await load_message(user_id=user_id_frmjwt)
     try:

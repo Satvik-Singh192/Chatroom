@@ -6,6 +6,9 @@ import { ChatroomPage } from './pages/ChatroomPage';
 function App() {
   const [root_url_http,setUrlHttp]=useState("");
   const [root_url_websocket,setUrlWebsocket]=useState("");
+  const [currentUser,setCurrentUser]=useState("guest");
+  const [isAuthenticated,setIsAuthenticated]=useState(false);
+  const [isCheckingAuth,setIsCheckingAuth]=useState(true);
 
   useEffect(() => {
     if (import.meta.env.MODE === "development") {
@@ -16,24 +19,47 @@ function App() {
       setUrlHttp("https://chatroom-as5j.onrender.com/");
     }
   }, []);
-  const [token,setToken]=useState(localStorage.getItem("chat_token"));
-  const [user,setUser]=useState(localStorage.getItem("chat_user"));
-
-  const handleLogin=(newToken,newUser)=>{
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem("chat_token",newToken);
-    localStorage.setItem("chat_user",newUser);
-  }
-  const handleLogout=()=>{
-    setToken(null);
-    setUser(null);
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch(`${root_url_http}verify`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.log("Auth check failed:",error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    if (root_url_http) {
+      checkAuth();
+    }
+  }, [root_url_http]);
+  const handleLogin=()=>{
+    setIsAuthenticated(true);
+  };
+  const handleLogout=async ()=>{
+    await fetch(`${root_url_http}logout`,{
+      method:"POST",
+      credentials:"include"
+  });
+  setIsAuthenticated(false);
+  setCurrentUser("");
   }
 
   return (
     <div className='App'>
-      {token ? (
-        <ChatroomPage token={token} currentUser={user} root_url_ws={root_url_websocket} onLogout={handleLogout} />
+      {isCheckingAuth ? (
+        <div>Loading...</div>
+      ) : isAuthenticated ? (
+        <ChatroomPage root_url_ws={root_url_websocket} onLogout={handleLogout} currentUser={currentUser} setCurrentUser={setCurrentUser}/>
       ) : (
         <AuthPage onLoginSuccess={handleLogin} root_url_http={root_url_http} />
       )}

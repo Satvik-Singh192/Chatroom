@@ -13,7 +13,8 @@ export function AuthPage({root_url_http,onLoginSuccess}){
             const response=await fetch(url,{
                 method:'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: user, password: pass })
+                body: JSON.stringify({ user_id: user, password: pass }),
+                credentials:"include"
             });
             const data=await response.json();
             if(type=="signup"){
@@ -21,7 +22,7 @@ export function AuthPage({root_url_http,onLoginSuccess}){
             }
             if(!response.ok)throw new Error(data.detail||"something went wrong, index 117");
             if(type=="login"){
-                onLoginSuccess(data.access_token,user);
+                onLoginSuccess();
             }
         }
         catch(err){

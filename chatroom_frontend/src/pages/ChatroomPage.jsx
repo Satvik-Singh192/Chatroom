@@ -3,9 +3,7 @@ import { ActiveUserContainer } from "../components/chatroom/ActiveUserContainer"
 import { ChatContainer } from "../components/chatroom/ChatContainer";
 import "./ChatroomPage.css";
 
-
-
-export function ChatroomPage({ token, currentUser, root_url_ws, onLogout }) {
+export function ChatroomPage({ root_url_ws, onLogout,currentUser,setCurrentUser }) {
     const [onlineUsers,setOnlineUsers]=useState([]);
     const [messages,setMessages]=useState([]);
     const wsRef=useRef(null);
@@ -15,16 +13,13 @@ export function ChatroomPage({ token, currentUser, root_url_ws, onLogout }) {
         if(wsRef.current) {
             wsRef.current.close();
         }
-        localStorage.removeItem("chat_token");
-        localStorage.removeItem("chat_user");
         onLogout();
     };
-
-
     useEffect(()=>{
-        if(!token)return;
-        const websocket_url=`${root_url_ws}?token=${token}`;
-        const ws=new WebSocket(websocket_url);
+        if(wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            return;
+        }
+        const ws=new WebSocket(root_url_ws);
         wsRef.current=ws;
 
         ws.onopen=()=>{
@@ -51,6 +46,10 @@ export function ChatroomPage({ token, currentUser, root_url_ws, onLogout }) {
                     setMessages(prev=>[...prev,data]);
                     break;
                 }
+                case "client_id":{
+                    setCurrentUser(data.message);
+                    break;
+                }
                 default:{
                     console.warn("unknow message type recieved: ",data.message_type," ",data.message);
                 }
@@ -64,11 +63,13 @@ export function ChatroomPage({ token, currentUser, root_url_ws, onLogout }) {
         }
 
         return ()=>{
-            ws.close();
+            if(ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
             wsRef.current=null;
         }
         
-    },[token,root_url_ws]);
+    },[root_url_ws]);
     
 
     const sendMessage=(text,reciever)=>{
@@ -77,11 +78,11 @@ export function ChatroomPage({ token, currentUser, root_url_ws, onLogout }) {
             return;
         }
         let payload;
-
         if(reciever==="all"){
             payload={
                     message_type:"broadcast",
                     sender_id:currentUser,
+                    // server doesnt trust this sender_id so it overwrites it on the backend. TO DO : remove this from the model 
                     reciever_id:null,
                     message:text
                 };

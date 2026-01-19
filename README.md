@@ -1,6 +1,15 @@
+## v2.1.0
+- completely refactored the frontend from legacy html-based approach to a modern React.js based application. way cleaner and maintainable now
+- ditched the insecure query parameter approach for JWT token passing. now using http-only cookies only (security++). had to fight with samesite cookie policy for a while lol
+- fixed a critical issue where cookies werent being sent with websocket upgrade requests. turns out you need `samesite="none"` and `secure=True` for cross-origin cookies, even on localhost
+- added session persistence. users now stay logged in on page reload if their jwt token hasnt expired. backend verifies the token with a new `/verify` endpoint
+- fixed react strict mode double-invoke issue that was spamming websocket connection errors. now checks if connection is already open before creating a new one
+- added proper loading state while checking authentication on app startup
+- also updated the cookie settings on logout endpoint to match the new samesite and secure attributes
+
 ## v2.0.0
 - moved from in memory storage to database backed system (postgres op)
-- message are persisted instead of just living on memory. when a user connects last 10 messages are fetched from the database
+- message are persisted instead of just living on memory. when a user connects last 20 messages are fetched from the database
 - refactored some of frontend code to reduce redudancy
 - also fixed a bug where when a user breaks the connection from his side(reloading) the backend tries to disconnect him twice raising an error
 - also moved a lot of steps like sending user list and loading chat history outside ConnectionManger.connect so the code is cleaner and a little easier to debug (i hope lol)
